@@ -1,0 +1,24 @@
+* ccache
+saves the output of a command on disk. In the case the command fails, it will read and print the stored cached output.
+
+** Usage
+#+begin_src
+> ccache w3m -dump https://www.google.com/robots.txt
+User-agent: *
+Disallow: /search
+Allow: /search/about
+Allow: /search/static
+Allow: /search/howsearchworks
+Disallow: /sdch
+Disallow: /groups
+Disallow: /index.html?
+Disallow: /?
+Allow: /?hl=
+Disallow: /?hl=*&
+#+end_src
+
+** TODO
+- Expire cache based on time of creation (new field?)
+- Force cache usage flag
+- Context (PATH) aware cache
+- Flag to store subsequent different version of the output, instead of only keep the latest (date field?)
