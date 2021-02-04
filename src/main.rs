@@ -71,8 +71,8 @@ impl Item {
         Some(u)
     }
     fn replay(&self) {
-        println!("{}", self.stdout);
-        eprintln!("{}", self.stderr);
+        print!("{}", self.stdout);
+        eprint!("{}", self.stderr);
     }
 }
 
