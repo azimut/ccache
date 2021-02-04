@@ -2,6 +2,7 @@
 saves the output of a command on disk. In the case the command fails, it will read and print the stored cached output.
 
 ** Usage
+
 #+begin_src
 > ccache w3m -dump https://www.google.com/robots.txt
 User-agent: *
@@ -18,6 +19,7 @@ Disallow: /?hl=*&
 #+end_src
 
 ** TODO
+
 - Expire cache based on time of creation (new field?)
 - Force cache usage flag
 - Context (PATH) aware cache

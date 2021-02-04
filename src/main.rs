@@ -1,19 +1,22 @@
 extern crate dirs;
+extern crate flate2;
 extern crate serde;
 extern crate serde_json;
 extern crate sha3;
 
+use flate2::write::{GzDecoder, GzEncoder};
+use flate2::Compression;
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Sha3_256};
 use std::env;
 use std::fs;
 use std::fs::File;
-use std::io::BufReader;
+use std::io::prelude::*;
 use std::path::PathBuf;
 use std::process;
 use std::process::Command;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 struct Item {
     hash: String,
     exe: String,
@@ -29,8 +32,8 @@ impl Item {
     fn new(command: Vec<String>) -> Self {
         let hash = hashit(&command);
         let args = command[1..].join(" ");
-        let exe = command[0].clone();
-        let filename = format!("{}_{}.json", exe.clone(), hash.clone());
+        let exe = &command[0];
+        let filename = format!("{}_{}.json.gz", exe.clone(), hash.clone());
         let path = datadir().join(filename.clone());
         Self {
             hash: hash.clone(),
@@ -38,9 +41,7 @@ impl Item {
             args: args,
             filename: filename.clone(),
             path: path,
-            stdout: "".to_string(),
-            stderr: "".to_string(),
-            status: 0,
+            ..Default::default()
         }
     }
     fn execute(&mut self) {
@@ -53,20 +54,20 @@ impl Item {
         self.status = output.status.code().unwrap();
     }
     fn save(&self) {
-        let db = datadir();
-        mkdir(db);
-        let file = File::create(&self.path).expect("could not create the file");
-        serde_json::to_writer_pretty(&file, &self).expect("could write the file");
+        let data = serde_json::to_vec_pretty(&self).expect("failed to encode");
+        let f = File::create(&self.path).expect("could not create new file");
+        let mut gz = GzEncoder::new(&f, Compression::default());
+        gz.write(&data[..]).expect("could not write");
+        gz.finish().expect("could not finish to write");
     }
     fn find_backup(&self) -> Option<Item> {
-        if self.path.exists() {
-            let file = File::open(&self.path).expect("failed to open old");
-            let reader = BufReader::new(file);
-            let u = serde_json::from_reader(reader).expect("cannot deserialize");
-            Some(u)
-        } else {
-            None
+        if !self.path.exists() {
+            return None;
         }
+        let file = File::open(&self.path).expect("failed to open old");
+        let gz = GzDecoder::new(&file);
+        let u = serde_json::from_reader(gz).expect("cannot deserialize");
+        Some(u)
     }
     fn replay(&self) {
         println!("{}", self.stdout);
@@ -98,9 +99,11 @@ fn main() {
         process::exit(1);
     }
 
+    mkdir(datadir());
+
     let mut item = Item::new(args[1..].into());
     item.execute();
-    eprintln!("{}  {}", item.status, item.hash);
+
     if item.status == 0 {
         item.save();
         item.replay();
