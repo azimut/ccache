@@ -25,7 +25,6 @@ struct Item {
     stderr: String,
     status: i32,
     filename: String,
-    path: PathBuf,
 }
 
 impl Item {
@@ -34,15 +33,16 @@ impl Item {
         let args = command[1..].join(" ");
         let exe = &command[0];
         let filename = format!("{}_{}.json.gz", exe.clone(), hash.clone());
-        let path = datadir().join(filename.clone());
         Self {
             hash: hash.clone(),
             exe: exe.clone(),
             args: args,
             filename: filename.clone(),
-            path: path,
             ..Default::default()
         }
+    }
+    fn path(&self) -> PathBuf {
+        datadir().join(&self.filename)
     }
     fn execute(&mut self) {
         let output = Command::new(self.exe.clone())
@@ -55,16 +55,16 @@ impl Item {
     }
     fn save(&self) {
         let data = serde_json::to_vec_pretty(&self).expect("failed to encode");
-        let f = File::create(&self.path).expect("could not create new file");
+        let f = File::create(self.path()).expect("could not create new file");
         let mut gz = GzEncoder::new(&f, Compression::default());
         gz.write(&data[..]).expect("could not write");
         gz.finish().expect("could not finish to write");
     }
     fn find_backup(&self) -> Option<Item> {
-        if !self.path.exists() {
+        if !self.path().exists() {
             return None;
         }
-        let file = File::open(&self.path).expect("failed to open old");
+        let file = File::open(self.path()).expect("failed to open old");
         let gz = GzDecoder::new(&file);
         let u = serde_json::from_reader(gz).expect("cannot deserialize");
         Some(u)
