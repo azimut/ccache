@@ -4,7 +4,8 @@ extern crate serde;
 extern crate serde_json;
 extern crate sha3;
 
-use flate2::write::{GzDecoder, GzEncoder};
+use flate2::read::GzDecoder;
+use flate2::write::GzEncoder;
 use flate2::Compression;
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Sha3_256};
@@ -65,7 +66,7 @@ impl Item {
             return None;
         }
         let file = File::open(self.path()).expect("failed to open old");
-        let gz = GzDecoder::new(&file);
+        let gz = GzDecoder::new(file);
         let u = serde_json::from_reader(gz).expect("cannot deserialize");
         Some(u)
     }
