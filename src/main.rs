@@ -1,9 +1,3 @@
-extern crate dirs;
-extern crate flate2;
-extern crate serde;
-extern crate serde_json;
-extern crate sha3;
-
 use flate2::read::GzDecoder;
 use flate2::write::GzEncoder;
 use flate2::Compression;
