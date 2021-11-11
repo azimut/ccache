@@ -13,26 +13,26 @@ use std::process::Command;
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 struct Item {
-    hash: String,
-    exe: String,
     args: String,
-    stdout: String,
-    stderr: String,
-    status: i32,
+    exe: String,
     filename: String,
+    hash: String,
+    status: i32,
+    stderr: String,
+    stdout: String,
 }
 
 impl Item {
     fn new(command: Vec<String>) -> Self {
         let hash = hashit(&command);
         let args = command[1..].join(" ");
-        let exe = &command[0];
-        let filename = format!("{}_{}.json.gz", exe.clone(), hash.clone());
+        let exe = command[0].clone();
+        let filename = format!("{}_{}.json.gz", exe, hash);
         Self {
-            hash: hash.clone(),
-            exe: exe.clone(),
-            args: args,
-            filename: filename.clone(),
+            args,
+            exe,
+            filename,
+            hash,
             ..Default::default()
         }
     }
@@ -41,7 +41,7 @@ impl Item {
     }
     fn execute(&mut self) {
         let output = Command::new(self.exe.clone())
-            .args(self.args.clone().split(" "))
+            .args(self.args.clone().split(' '))
             .output()
             .expect("command failed to execute");
         self.stdout = String::from_utf8(output.stdout).unwrap();
@@ -52,7 +52,7 @@ impl Item {
         let data = serde_json::to_vec_pretty(&self).expect("failed to encode");
         let f = File::create(self.path()).expect("could not create new file");
         let mut gz = GzEncoder::new(&f, Compression::default());
-        gz.write(&data[..]).expect("could not write");
+        gz.write_all(&data[..]).expect("could not write");
         gz.finish().expect("could not finish to write");
     }
     fn find_backup(&self) -> Option<Item> {
@@ -81,7 +81,7 @@ fn mkdir(s: PathBuf) {
     }
 }
 
-fn hashit(v: &Vec<String>) -> String {
+fn hashit(v: &[String]) -> String {
     let args = v.join(" ");
     let data = args.as_bytes();
     let hash = Sha3_256::digest(data);
